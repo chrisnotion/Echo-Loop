@@ -13,6 +13,7 @@ import '../../subscription/widgets/feature_gate.dart';
 import '../models/chatbot_config.dart';
 import '../providers/chat_session_controller.dart';
 import '../screens/chat_edit_screen.dart';
+import '../state/chat_session_state.dart';
 import 'chat_composer.dart';
 import 'chat_gate_banner.dart';
 import 'chat_quote_bar.dart';
