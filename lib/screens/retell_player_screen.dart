@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import '../database/enums.dart';
 import '../models/practice_completion_result.dart';
 import '../features/auth/sign_in_required_dialog.dart';
+import '../features/custom_ai/providers/custom_ai_provider.dart';
 import '../features/subscription/models/premium_feature.dart';
 import '../features/subscription/widgets/ai_quota_exceeded_dialog.dart';
 import '../features/subscription/widgets/feature_gate.dart' show openPaywall;
@@ -425,7 +426,8 @@ class _RetellPlayerScreenState extends ConsumerState<RetellPlayerScreen>
 
   /// 云端 AI 复述评估的登录引导（与 AI 转录、意群共用同一个通用弹窗）。
   Future<void> _showRetellReviewSignInDialog() async {
-    if (!mounted) return;
+    final isCustomAi = ref.read(customAiSettingsProvider).isOpenAiConfigured;
+    if (isCustomAi || !mounted) return;
     final l10n = AppLocalizations.of(context);
     await ensureSignedInForAction(
       context: context,

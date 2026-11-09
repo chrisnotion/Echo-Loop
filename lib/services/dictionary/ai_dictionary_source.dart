@@ -99,7 +99,7 @@ class AiDictionarySource implements DictionarySource {
       try {
         final decoded = jsonDecode(cached);
         if (decoded is Map<String, dynamic>) {
-          final entry = isPhrase
+          final entry = decoded.containsKey('originalExpression')
               ? MultiWordDictionaryEntry.fromJson(decoded)
               : DictionaryEntry.fromJson(decoded);
           _memCache[key] = entry;
@@ -111,23 +111,25 @@ class AiDictionarySource implements DictionarySource {
       }
     }
 
-    // L3 网络请求需要登录；缓存读取不受登录状态限制。
-    if (token == null || token.isEmpty) {
+    // L3 网络请求需要登录；自定义 AI 或缓存读取不受登录状态限制。
+    final apiClient = _apiClient();
+    final isCustomAi = apiClient.isCustomAiConfigured;
+    if (!isCustomAi && (token == null || token.isEmpty)) {
       throw const DictionaryAuthRequiredException();
     }
 
+    final effectiveToken = token ?? 'custom';
     // L3 流式 API：按 isPhrase 分流到单词/词组端点
-    final apiClient = _apiClient();
     final stream = isPhrase
         ? apiClient.lookupPhraseStreamFrames(
             word,
-            accessToken: token,
+            accessToken: effectiveToken,
             targetLanguage: language,
             cancelToken: cancelToken,
           )
         : apiClient.lookupWordStreamFrames(
             word,
-            accessToken: token,
+            accessToken: effectiveToken,
             targetLanguage: language,
             cancelToken: cancelToken,
           );

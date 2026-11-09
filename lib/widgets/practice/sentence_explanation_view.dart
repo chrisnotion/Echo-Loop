@@ -16,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/providers/auth_providers.dart';
 import '../../features/auth/sign_in_required_dialog.dart';
+import '../../features/custom_ai/providers/custom_ai_provider.dart';
 import '../../features/chatbot/chatbot_flags.dart';
 import '../../features/chatbot/sentence_passage.dart';
 import '../../features/chatbot/widgets/sentence_chat_button.dart';
@@ -555,6 +556,8 @@ class _SentenceExplanationViewState
   /// 只在确实需要请求 L3 API 且当前无 Supabase session 时出现；
   /// 已缓存的 L1/L2 结果不会触发登录门槛。
   Future<void> _showAiFeatureSignInDialog() async {
+    final isCustomAi = ref.read(customAiSettingsProvider).isOpenAiConfigured;
+    if (isCustomAi) return;
     final l10n = AppLocalizations.of(context);
     if (l10n == null) return;
     await ensureSignedInForAction(

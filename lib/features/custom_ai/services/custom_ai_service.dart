@@ -295,21 +295,29 @@ class CustomAiService {
         '    {\n'
         '      "partOfSpeech": "n./v./adj.",\n'
         '      "definition": "English definition",\n'
-        '      "translation": "释义 in $lang",\n'
-        '      "examples": [{"en": "Example sentence", "zh": "例句翻译"}]\n'
+        '      "translation": ["释义1 in $lang", "释义2"],\n'
+        '      "examples": [{"sentence": "English example", "translation": "例句翻译 in $lang"}]\n'
         '    }\n'
         '  ],\n'
         '  "commonExpressions": [\n'
         '    {\n'
-        '      "phrase": "Collocation or idiom",\n'
+        '      "expression": "Collocation or idiom",\n'
+        '      "type": "collocation",\n'
         '      "meaning": "含义 in $lang",\n'
-        '      "examples": [{"en": "Example", "zh": "例句"}]\n'
+        '      "example": {"sentence": "English example", "translation": "例句翻译"}\n'
         '    }\n'
         '  ],\n'
-        '  "wordFamily": [{"word": "related form", "relation": "n/v/adj"}],\n'
-        '  "forms": [{"form": "plural or past", "type": "plural/past"}],\n'
+        '  "wordFamily": [\n'
+        '    {\n'
+        '      "word": "related form",\n'
+        '      "partOfSpeech": "n./v./adj.",\n'
+        '      "meaning": "含义 in $lang",\n'
+        '      "example": {"sentence": "English example", "translation": "例句翻译"}\n'
+        '    }\n'
+        '  ],\n'
+        '  "forms": [{"form": "plural or past", "label": "形式名称 in $lang"}],\n'
         '  "etymology": "Brief etymology or memory trick",\n'
-        '  "learnerTips": ["Common mistake or nuance tip"]\n'
+        '  "learnerTips": ["Common mistake or nuance tip in $lang"]\n'
         '}\n'
         'Pure JSON only without markdown code blocks.';
 
@@ -321,8 +329,73 @@ class CustomAiService {
       cancelToken: cancelToken,
     );
 
-    final json = jsonDecode(_cleanJson(raw)) as Map<String, dynamic>;
-    final entry = DictionaryEntry.fromJson(json);
+    DictionaryEntry entry;
+    try {
+      final json = jsonDecode(_cleanJson(raw)) as Map<String, dynamic>;
+      if (json['meanings'] is List) {
+        for (final m in json['meanings']) {
+          if (m is Map<String, dynamic>) {
+            if (m['translation'] is String) {
+              m['translation'] = [m['translation'] as String];
+            }
+            if (m['examples'] is List) {
+              for (final ex in m['examples']) {
+                if (ex is Map<String, dynamic>) {
+                  if (ex.containsKey('en') && !ex.containsKey('sentence')) {
+                    ex['sentence'] = ex['en'];
+                  }
+                  if (ex.containsKey('zh') && !ex.containsKey('translation')) {
+                    ex['translation'] = ex['zh'];
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+      if (json['commonExpressions'] is List) {
+        for (final ce in json['commonExpressions']) {
+          if (ce is Map<String, dynamic>) {
+            if (ce.containsKey('phrase') && !ce.containsKey('expression')) {
+              ce['expression'] = ce['phrase'];
+            }
+            if (ce.containsKey('examples') &&
+                ce['examples'] is List &&
+                (ce['examples'] as List).isNotEmpty) {
+              final firstEx = (ce['examples'] as List).first;
+              if (firstEx is Map<String, dynamic>) {
+                ce['example'] = {
+                  'sentence': firstEx['en'] ?? firstEx['sentence'] ?? '',
+                  'translation': firstEx['zh'] ?? firstEx['translation'] ?? '',
+                };
+              }
+            }
+          }
+        }
+      }
+      entry = DictionaryEntry.fromJson(json);
+    } catch (_) {
+      entry = DictionaryEntry(
+        headword: word,
+        pronunciation: const Pronunciation(us: '', uk: ''),
+        meanings: [
+          WordMeaning(
+            partOfSpeech: '',
+            definition: raw.trim(),
+            translation: [raw.trim()],
+            usageNote: '',
+            examples: const [],
+            synonyms: const [],
+            antonyms: const [],
+          ),
+        ],
+        commonExpressions: const [],
+        wordFamily: const [],
+        forms: const [],
+        etymology: '',
+        learnerTips: const [],
+      );
+    }
 
     yield AiDictionaryStreamFrame(
       entry: entry,

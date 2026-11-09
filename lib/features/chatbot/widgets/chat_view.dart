@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../widgets/selection/selection_toolbar_host.dart';
 import '../../auth/sign_in_required_dialog.dart';
+import '../../custom_ai/providers/custom_ai_provider.dart';
 import '../../subscription/widgets/feature_gate.dart';
 import '../models/chatbot_config.dart';
 import '../providers/chat_session_controller.dart';
@@ -86,7 +87,8 @@ class _ChatViewState extends ConsumerState<ChatView> {
     final l10n = AppLocalizations.of(context)!;
 
     final isStreaming = ref.watch(provider.select((s) => s.isStreaming));
-    final gate = ref.watch(provider.select((s) => s.gate));
+    final isCustomAi = ref.watch(customAiSettingsProvider).isOpenAiConfigured;
+    final gate = isCustomAi ? ChatGate.none : ref.watch(provider.select((s) => s.gate));
 
     final summary = config.contextSummary;
 
@@ -156,13 +158,16 @@ class _ChatViewState extends ConsumerState<ChatView> {
       ),
     );
     if (edited == null || !mounted) return; // 关闭编辑页 = 取消，不改会话
-    final ok = await ensureSignedInForAction(
-      context: context,
-      ref: ref,
-      title: l10n.chatSignInTitle,
-      message: l10n.chatSignInMessage,
-    );
-    if (!ok || !mounted) return;
+    final isCustomAi = ref.read(customAiSettingsProvider).isOpenAiConfigured;
+    if (!isCustomAi) {
+      final ok = await ensureSignedInForAction(
+        context: context,
+        ref: ref,
+        title: l10n.chatSignInTitle,
+        message: l10n.chatSignInMessage,
+      );
+      if (!ok || !mounted) return;
+    }
     await notifier.editAndResend(messageId, edited);
   }
 
@@ -174,13 +179,16 @@ class _ChatViewState extends ConsumerState<ChatView> {
     ChatSessionController notifier,
     String text,
   ) async {
-    final ok = await ensureSignedInForAction(
-      context: context,
-      ref: ref,
-      title: l10n.chatSignInTitle,
-      message: l10n.chatSignInMessage,
-    );
-    if (!ok) return;
+    final isCustomAi = ref.read(customAiSettingsProvider).isOpenAiConfigured;
+    if (!isCustomAi) {
+      final ok = await ensureSignedInForAction(
+        context: context,
+        ref: ref,
+        title: l10n.chatSignInTitle,
+        message: l10n.chatSignInMessage,
+      );
+      if (!ok) return;
+    }
     final quote = _pendingQuote;
     if (quote != null && mounted) setState(() => _pendingQuote = null);
     await notifier.send(text, quote: quote);
@@ -193,6 +201,8 @@ class _ChatViewState extends ConsumerState<ChatView> {
     AppLocalizations l10n,
     ChatSessionController notifier,
   ) async {
+    final isCustomAi = ref.read(customAiSettingsProvider).isOpenAiConfigured;
+    if (isCustomAi) return;
     await ensureSignedInForAction(
       context: context,
       ref: ref,
