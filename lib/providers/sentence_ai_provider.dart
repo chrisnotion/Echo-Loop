@@ -331,8 +331,11 @@ class SentenceAiNotifier {
     }
 
     // L3: 流式 API 调用
-    if ((accessToken == null || accessToken.isEmpty) &&
-        !_apiClient.isCustomAiConfigured) {
+    final effectiveToken =
+        (accessToken != null && accessToken.isNotEmpty)
+            ? accessToken
+            : (_apiClient.isCustomAiConfigured ? 'custom' : null);
+    if (effectiveToken == null) {
       AppLogger.log('SentenceAI', '翻译 L3 需要登录，未发现 Supabase access token');
       throw const AiFeatureAuthRequiredException();
     }
@@ -360,7 +363,7 @@ class SentenceAiNotifier {
         previous: previous,
         next: next,
         targetLanguage: targetLanguage,
-        accessToken: accessToken,
+        accessToken: effectiveToken,
       ),
     );
     yield* pending.subscribe();
@@ -496,8 +499,11 @@ class SentenceAiNotifier {
     }
 
     // L3: 流式 API 调用
-    if ((accessToken == null || accessToken.isEmpty) &&
-        !_apiClient.isCustomAiConfigured) {
+    final effectiveToken =
+        (accessToken != null && accessToken.isNotEmpty)
+            ? accessToken
+            : (_apiClient.isCustomAiConfigured ? 'custom' : null);
+    if (effectiveToken == null) {
       AppLogger.log('SentenceAI', '解析 L3 需要登录，未发现 Supabase access token');
       throw const AiFeatureAuthRequiredException();
     }
@@ -523,7 +529,7 @@ class SentenceAiNotifier {
         l2Type: l2Type,
         text: text,
         targetLanguage: targetLanguage,
-        accessToken: accessToken,
+        accessToken: effectiveToken,
       ),
     );
     yield* pending.subscribe();
@@ -658,8 +664,11 @@ class SentenceAiNotifier {
     }
 
     // L3: 流式 API 调用
-    if ((accessToken == null || accessToken.isEmpty) &&
-        !_apiClient.isCustomAiConfigured) {
+    final effectiveToken =
+        (accessToken != null && accessToken.isNotEmpty)
+            ? accessToken
+            : (_apiClient.isCustomAiConfigured ? 'custom' : null);
+    if (effectiveToken == null) {
       AppLogger.log('SenseGroup', 'L3 需要登录，未发现 Supabase access token');
       throw const AiFeatureAuthRequiredException();
     }
@@ -682,7 +691,7 @@ class SentenceAiNotifier {
         pending,
         hash: hash,
         text: text,
-        accessToken: accessToken,
+        accessToken: effectiveToken,
       ),
     );
     yield* pending.subscribe();
