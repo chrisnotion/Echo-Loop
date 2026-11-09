@@ -37,12 +37,10 @@ jobs:
           set +e
           flutter analyze --no-fatal-warnings --no-fatal-infos lib test > analyze.log 2>&1
           ANALYZE_EXIT=$?
-          echo "## Analyze Results" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat analyze.log >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat analyze.log
           if [ $ANALYZE_EXIT -ne 0 ]; then
+            while IFS= read -r line; do
+              echo "::error::$line"
+            done < analyze.log
             exit $ANALYZE_EXIT
           fi
 
