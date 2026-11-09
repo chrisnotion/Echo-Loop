@@ -30,6 +30,7 @@ import '../providers/audio_library_provider.dart';
 import '../services/app_logger.dart';
 import '../services/subtitle_auto_align_service.dart';
 import '../services/transcription_api_client.dart';
+import '../features/custom_ai/providers/custom_ai_provider.dart';
 import '../utils/audio_fingerprint.dart';
 import '../utils/srt_generator.dart';
 import '../utils/transcript_stats.dart';
@@ -275,6 +276,37 @@ class TranscriptionTaskManager extends _$TranscriptionTaskManager {
         'Step 2 上传 | isVideo=${audioItem.isVideo} sha256=$transcriptionSha256 '
             'size=$fileSize mime=$mimeType',
       );
+
+      final customAi = ref.read(customAiSettingsProvider);
+      if (customAi.isDeepgramConfigured) {
+        AppLogger.log('Transcription', '使用自定义 Deepgram API 进行转录: $uploadPath');
+        final customAiService = ref.read(customAiServiceProvider);
+        final transcriptResult = await customAiService.transcribeWithDeepgram(
+          filePath: uploadPath,
+          mimeType: mimeType,
+          language: language,
+          cancelToken: cancelToken,
+          onProgress: (sent, total) {
+            if (total > 0) {
+              _updateState(
+                audioId,
+                TranscriptionUploading(progress: sent / total),
+              );
+            }
+          },
+        );
+
+        _updateState(audioId, const TranscriptionProcessing(jobId: 'deepgram'));
+        if (cancelToken.isCancelled) return;
+
+        await _saveTranscriptAndFinish(
+          audioItem,
+          transcriptResult,
+          language,
+          finalAudioSha256,
+        );
+        return;
+      }
 
       final uploadResp = await api.getUploadUrl(
         sha256: transcriptionSha256,

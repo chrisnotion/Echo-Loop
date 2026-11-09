@@ -30,6 +30,7 @@ import '../providers/learning_progress_provider.dart';
 import '../providers/learning_settings_provider.dart';
 import '../providers/listening_practice/listening_practice_provider.dart';
 import '../providers/settings_provider.dart';
+import '../features/custom_ai/providers/custom_ai_provider.dart';
 import '../providers/transcription_task_provider.dart';
 import '../providers/local_transcription_task_provider.dart';
 import '../providers/local_transcription_model_provider.dart';
@@ -129,7 +130,7 @@ class _ManageSubtitlesSheetState extends ConsumerState<ManageSubtitlesSheet> {
   /// 是否展示本地离线转录入口。
   ///
   /// 当前本地转录效果不稳定，先隐藏入口；保留实现和状态处理，便于后续恢复。
-  bool get _showOfflineTranscriptionEntry => false;
+  bool get _showOfflineTranscriptionEntry => true;
 
   @override
   void initState() {
@@ -1921,10 +1922,12 @@ class _ManageSubtitlesSheetState extends ConsumerState<ManageSubtitlesSheet> {
     AudioItem audioItem,
   ) async {
     final l10n = AppLocalizations.of(context)!;
+    final customAi = ref.read(customAiSettingsProvider);
+    final hasCustomDeepgram = customAi.isDeepgramConfigured;
     final accessToken = (await ref.read(supabaseSessionProvider.future))
         ?.accessToken;
     if (!mounted || !context.mounted) return;
-    if (accessToken == null || accessToken.isEmpty) {
+    if (!hasCustomDeepgram && (accessToken == null || accessToken.isEmpty)) {
       await _showTranscriptionSignInDialog(context);
       return;
     }
@@ -2004,7 +2007,7 @@ class _ManageSubtitlesSheetState extends ConsumerState<ManageSubtitlesSheet> {
         .startTranscription(
           audioItem,
           _selectedLanguage,
-          accessToken: accessToken,
+          accessToken: accessToken ?? 'custom',
           autoMergeShortSentences: _autoMergeShortSentences,
         );
     ref

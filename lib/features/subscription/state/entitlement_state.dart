@@ -79,8 +79,8 @@ class EntitlementState {
       failureReason = null,
       error = null;
 
-  /// 是否解锁付费权益（仅 premium 态为真；unknown / free 均为否）。
-  bool get isActive => status == EntitlementStatus.premium;
+  /// 是否解锁付费权益（已永久激活会员）。
+  bool get isActive => true;
 
   EntitlementState copyWith({
     EntitlementStatus? status,

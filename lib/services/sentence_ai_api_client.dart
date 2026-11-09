@@ -26,6 +26,8 @@ import '../models/sentence_ai_result.dart';
 import '../models/sense_group_result.dart';
 import '../models/retell_review_evaluation.dart';
 import '../models/dictionary/dictionary_entry.dart';
+import '../features/custom_ai/providers/custom_ai_provider.dart';
+import '../features/custom_ai/services/custom_ai_service.dart';
 
 part 'sentence_ai_api_client.g.dart';
 
@@ -107,6 +109,11 @@ class SenseGroupsStreamException implements Exception {
 class SentenceAiApiClient {
   final Dio _dio;
   final void Function(String message) _streamLogPrint;
+  final CustomAiService? _customAiService;
+
+  /// 是否启用了自定义 OpenAI 兼容接口
+  bool get isCustomAiConfigured =>
+      _customAiService?.settings.isOpenAiConfigured ?? false;
 
   /// [appVersion] 随请求以 `x-app-version` 上报（版本灰度预留），可为 null。
   /// 平台与渠道标识会随请求携带，后端据此按组合决定是否限额。
@@ -117,6 +124,7 @@ class SentenceAiApiClient {
     RuntimeEndpointRouter? endpointRouter,
     bool http2Enabled = aiHttp2EnabledByDefault,
     void Function(String message)? streamLogPrint,
+    CustomAiService? customAiService,
   }) : _dio = createAuthenticatedBackendDio(
          tokenCoordinator: tokenCoordinator,
          baseUrl: baseUrl,
@@ -129,7 +137,8 @@ class SentenceAiApiClient {
          apiLogTag: 'AI-API',
        ),
        _streamLogPrint =
-           streamLogPrint ?? ((message) => AppLogger.log('AI-API', message)) {
+           streamLogPrint ?? ((message) => AppLogger.log('AI-API', message)),
+       _customAiService = customAiService {
     configureAiHttpClientAdapter(
       _dio,
       baseUrl: baseUrl,
@@ -141,8 +150,10 @@ class SentenceAiApiClient {
   SentenceAiApiClient.withDio(
     this._dio, {
     void Function(String message)? streamLogPrint,
+    CustomAiService? customAiService,
   }) : _streamLogPrint =
-           streamLogPrint ?? ((message) => AppLogger.log('AI-API', message));
+           streamLogPrint ?? ((message) => AppLogger.log('AI-API', message)),
+       _customAiService = customAiService;
 
   /// 请求公共 headers（仅测试用，验证平台/版本标识已随请求携带）。
   @visibleForTesting
@@ -166,6 +177,16 @@ class SentenceAiApiClient {
     String? targetLanguage,
     CancelToken? cancelToken,
   }) async* {
+    if (isCustomAiConfigured) {
+      yield* _customAiService!.translateStream(
+        text,
+        previousText: previousText,
+        nextText: nextText,
+        targetLanguage: targetLanguage,
+        cancelToken: cancelToken,
+      );
+      return;
+    }
     final response = await _dio.post<ResponseBody>(
       '/api/v1/stream/translate',
       data: {
@@ -242,6 +263,14 @@ class SentenceAiApiClient {
     String? targetLanguage,
     CancelToken? cancelToken,
   }) async* {
+    if (isCustomAiConfigured) {
+      yield* _customAiService!.analyzeStream(
+        text,
+        targetLanguage: targetLanguage,
+        cancelToken: cancelToken,
+      );
+      return;
+    }
     final response = await _dio.post<ResponseBody>(
       '/api/v1/stream/analyze',
       data: {
@@ -383,6 +412,14 @@ class SentenceAiApiClient {
     String? targetLanguage,
     CancelToken? cancelToken,
   }) async* {
+    if (isCustomAiConfigured) {
+      yield* _customAiService!.lookupWordStream(
+        query,
+        targetLanguage: targetLanguage,
+        cancelToken: cancelToken,
+      );
+      return;
+    }
     final response = await _dio.post<ResponseBody>(
       path,
       data: {
@@ -483,6 +520,13 @@ class SentenceAiApiClient {
     required String accessToken,
     CancelToken? cancelToken,
   }) async* {
+    if (isCustomAiConfigured) {
+      yield* _customAiService!.senseGroupsStream(
+        text,
+        cancelToken: cancelToken,
+      );
+      return;
+    }
     final response = await _dio.post<ResponseBody>(
       '/api/v1/stream/sense-groups',
       data: {'text': text},
@@ -665,6 +709,7 @@ SentenceAiApiClient sentenceAiApiClient(Ref ref) {
     endpointRouter: runtimeEndpointRouter,
     appVersion: readAppVersion(ref),
     tokenCoordinator: ref.read(supabaseTokenCoordinatorProvider),
+    customAiService: ref.watch(customAiServiceProvider),
   );
   ref.onDispose(client.dispose);
   return client;

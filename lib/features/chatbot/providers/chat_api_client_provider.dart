@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../config/api_config.dart';
 import '../../auth/providers/auth_providers.dart';
 import '../../../providers/package_info_provider.dart';
+import '../../custom_ai/providers/custom_ai_provider.dart';
 import '../chatbot_flags.dart';
 import '../services/chat_api_client.dart';
 import '../../../services/runtime_endpoint_router.dart';
@@ -24,6 +25,7 @@ ChatApi chatApiClient(Ref ref) {
     endpointRouter: runtimeEndpointRouter,
     appVersion: readAppVersion(ref),
     tokenCoordinator: ref.read(supabaseTokenCoordinatorProvider),
+    customAiService: ref.watch(customAiServiceProvider),
   );
   ref.onDispose(client.dispose);
   return client;

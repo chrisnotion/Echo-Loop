@@ -104,9 +104,16 @@ android {
 androidComponents {
     onVariants(selector().all()) { variant ->
         if (variant.name.startsWith("prod")) {
-            variant.signingConfig.setConfig(
-                android.signingConfigs.getByName("release"),
-            )
+            val hasReleaseStore = (keystoreProperties["storeFile"] as String?)?.let { file(it).exists() } == true
+            if (hasReleaseStore) {
+                variant.signingConfig.setConfig(
+                    android.signingConfigs.getByName("release"),
+                )
+            } else {
+                variant.signingConfig.setConfig(
+                    android.signingConfigs.getByName("debug"),
+                )
+            }
         } else if (variant.name.startsWith("dev")) {
             variant.signingConfig.setConfig(
                 android.signingConfigs.getByName("debug"),

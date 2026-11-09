@@ -331,7 +331,8 @@ class SentenceAiNotifier {
     }
 
     // L3: 流式 API 调用
-    if (accessToken == null || accessToken.isEmpty) {
+    if ((accessToken == null || accessToken.isEmpty) &&
+        !_apiClient.isCustomAiConfigured) {
       AppLogger.log('SentenceAI', '翻译 L3 需要登录，未发现 Supabase access token');
       throw const AiFeatureAuthRequiredException();
     }
@@ -495,7 +496,8 @@ class SentenceAiNotifier {
     }
 
     // L3: 流式 API 调用
-    if (accessToken == null || accessToken.isEmpty) {
+    if ((accessToken == null || accessToken.isEmpty) &&
+        !_apiClient.isCustomAiConfigured) {
       AppLogger.log('SentenceAI', '解析 L3 需要登录，未发现 Supabase access token');
       throw const AiFeatureAuthRequiredException();
     }
@@ -656,7 +658,8 @@ class SentenceAiNotifier {
     }
 
     // L3: 流式 API 调用
-    if (accessToken == null || accessToken.isEmpty) {
+    if ((accessToken == null || accessToken.isEmpty) &&
+        !_apiClient.isCustomAiConfigured) {
       AppLogger.log('SenseGroup', 'L3 需要登录，未发现 Supabase access token');
       throw const AiFeatureAuthRequiredException();
     }

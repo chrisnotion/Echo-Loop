@@ -17,6 +17,7 @@ import '../../../analytics/models/event_names.dart';
 import '../../../providers/settings_provider.dart';
 import '../../../services/app_logger.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../../custom_ai/providers/custom_ai_provider.dart';
 import '../../subscription/models/premium_feature.dart';
 import '../../subscription/models/ai_quota_rejection.dart';
 import '../../subscription/providers/ai_trial_usage_provider.dart';
@@ -144,17 +145,20 @@ class ChatSessionController extends _$ChatSessionController {
     // 1) 闸门（gate 是 banner 的唯一数据源）。
     //    注意：当前 freeAllowancePolicy 为 AlwaysAllowPolicy（恒放行），本地额度预测在
     //    现网是前向兼容的死分支；额度唯一权威是后端 402。
-    if (!ref.read(isAuthenticatedProvider)) {
-      state = state.copyWith(gate: ChatGate.authRequired);
-      return;
-    }
-    final accessToken = ref
-        .read(supabaseSessionProvider)
-        .value
-        ?.accessToken;
-    if (accessToken == null || accessToken.isEmpty) {
-      state = state.copyWith(gate: ChatGate.authRequired);
-      return;
+    final isCustomAi = ref.read(customAiSettingsProvider).isOpenAiConfigured;
+    if (!isCustomAi) {
+      if (!ref.read(isAuthenticatedProvider)) {
+        state = state.copyWith(gate: ChatGate.authRequired);
+        return;
+      }
+      final accessToken = ref
+          .read(supabaseSessionProvider)
+          .value
+          ?.accessToken;
+      if (accessToken == null || accessToken.isEmpty) {
+        state = state.copyWith(gate: ChatGate.authRequired);
+        return;
+      }
     }
     if (!ref.read(featureAccessProvider(PremiumFeature.aiChat))) {
       state = state.copyWith(gate: ChatGate.quotaExceeded);
@@ -177,7 +181,9 @@ class ChatSessionController extends _$ChatSessionController {
       gate: ChatGate.none,
     );
 
-    await _run(botId, accessToken);
+    final token =
+        ref.read(supabaseSessionProvider).value?.accessToken ?? 'custom';
+    await _run(botId, token);
   }
 
   /// 内部：发起并消费流式，防竞态守卫。只留 happy-path，异常映射在 [_mapRunError]。

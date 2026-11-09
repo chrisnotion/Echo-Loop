@@ -69,6 +69,7 @@ import 'storage_browser_screen.dart';
 import 'download_tasks_screen.dart';
 import 'reminder_settings_screen.dart';
 import '../services/runtime_endpoint_router.dart';
+import '../features/custom_ai/screens/custom_ai_settings_screen.dart';
 import '../widgets/app_update_dialog.dart';
 
 const double _settingsLeadingIconExtent = 32;
@@ -184,6 +185,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           onTap: () =>
               context.push(isSignedIn ? AppRoutes.account : AppRoutes.login),
+        ),
+        ListTile(
+          leading: const Icon(Icons.auto_awesome, color: Colors.amber),
+          title: const Text('自定义 AI 与转录'),
+          subtitle: const Text('配置 OpenAI 兼容 API、Deepgram 转写与连通性测试'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const CustomAiSettingsScreen(),
+            ),
+          ),
         ),
         // 当前平台未启用订阅（未注入 RC key）时隐藏入口。
         if (ref.watch(subscriptionAvailabilityProvider))

@@ -16,6 +16,7 @@ import '../../../services/backend_dio.dart';
 import '../../../services/runtime_endpoint_router.dart';
 import '../../../services/ndjson_stream.dart';
 import '../../../services/supabase_token_coordinator.dart';
+import '../../custom_ai/services/custom_ai_service.dart';
 import '../models/chat_message.dart';
 import 'ndjson_text_stream.dart';
 
@@ -54,6 +55,7 @@ abstract interface class ChatApi {
 class ChatApiClient implements ChatApi {
   final Dio _dio;
   final void Function(String message) _streamLogPrint;
+  final CustomAiService? _customAiService;
 
   /// [appVersion] 随请求以 `x-app-version` 上报（版本灰度预留），可为 null。
   ChatApiClient({
@@ -63,6 +65,7 @@ class ChatApiClient implements ChatApi {
     RuntimeEndpointRouter? endpointRouter,
     bool http2Enabled = aiHttp2EnabledByDefault,
     void Function(String message)? streamLogPrint,
+    CustomAiService? customAiService,
   }) : _dio = createAuthenticatedBackendDio(
          tokenCoordinator: tokenCoordinator,
          baseUrl: baseUrl,
@@ -73,7 +76,8 @@ class ChatApiClient implements ChatApi {
          apiLogTag: 'CHAT-API',
        ),
        _streamLogPrint =
-           streamLogPrint ?? ((message) => AppLogger.log('CHAT-API', message)) {
+           streamLogPrint ?? ((message) => AppLogger.log('CHAT-API', message)),
+       _customAiService = customAiService {
     configureAiHttpClientAdapter(
       _dio,
       baseUrl: baseUrl,
@@ -85,8 +89,10 @@ class ChatApiClient implements ChatApi {
   ChatApiClient.withDio(
     this._dio, {
     void Function(String message)? streamLogPrint,
+    CustomAiService? customAiService,
   }) : _streamLogPrint =
-           streamLogPrint ?? ((message) => AppLogger.log('CHAT-API', message));
+           streamLogPrint ?? ((message) => AppLogger.log('CHAT-API', message)),
+       _customAiService = customAiService;
 
   /// 请求公共 headers（仅测试用）。
   @visibleForTesting
@@ -102,6 +108,16 @@ class ChatApiClient implements ChatApi {
     required String accessToken,
     CancelToken? cancelToken,
   }) async* {
+    if (_customAiService?.settings.isOpenAiConfigured == true) {
+      yield* _customAiService!.streamChat(
+        history: history,
+        context: context,
+        followUpInstruction: followUpInstruction,
+        targetLanguage: targetLanguage,
+        cancelToken: cancelToken,
+      );
+      return;
+    }
     final response = await _dio.post<ResponseBody>(
       endpoint,
       data: {

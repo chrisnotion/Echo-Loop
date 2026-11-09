@@ -1,0 +1,46 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+
+jobs:
+  build:
+    name: Build Android APK (Custom AI & Deepgram)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.9'
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build APK (Release arm64)
+        run: |
+          flutter build apk --release --flavor=prod \
+            --target-platform android-arm64 \
+            --dart-define=DISTRIBUTION_CHANNEL=direct
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EchoLoop-CustomAI-arm64
+          path: build/app/outputs/flutter-apk/app-prod-release.apk
+          retention-days: 14
