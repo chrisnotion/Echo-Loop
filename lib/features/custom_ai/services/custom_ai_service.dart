@@ -12,6 +12,7 @@ import '../../../services/sentence_ai_api_client.dart';
 import '../../../services/transcription_api_client.dart';
 import '../../../utils/srt_generator.dart';
 import '../../chatbot/models/chat_message.dart';
+import '../../chatbot/models/chat_role.dart';
 import '../../chatbot/services/ndjson_text_stream.dart';
 import '../models/custom_ai_settings.dart';
 
@@ -351,8 +352,8 @@ class CustomAiService {
 
     for (final m in history) {
       messages.add({
-        'role': m.role.name == 'assistant' ? 'assistant' : 'user',
-        'content': m.text,
+        'role': m.role == ChatRole.assistant ? 'assistant' : 'user',
+        'content': m.content,
       });
     }
 

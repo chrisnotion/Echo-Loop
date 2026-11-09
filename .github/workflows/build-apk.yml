@@ -32,6 +32,9 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
+      - name: Analyze
+        run: flutter analyze --no-fatal-warnings --no-fatal-infos lib
+
       - name: Build APK (Release arm64)
         run: |
           flutter build apk --release --flavor=prod \

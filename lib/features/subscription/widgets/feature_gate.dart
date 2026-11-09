@@ -9,13 +9,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../l10n/app_localizations.dart';
-import '../../../router/app_router.dart';
 import '../models/premium_feature.dart';
 import '../providers/feature_access_provider.dart';
-import '../providers/subscription_availability.dart';
 
 /// 打开订阅计划介绍 / 购买页（已全部解锁，此方法为空操作）。
 Future<void> openPaywall(BuildContext context, WidgetRef ref) async {
