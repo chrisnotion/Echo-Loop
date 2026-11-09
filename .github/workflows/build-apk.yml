@@ -33,7 +33,26 @@ jobs:
         run: flutter pub get
 
       - name: Analyze
-        run: flutter analyze --no-fatal-warnings --no-fatal-infos lib
+        run: |
+          set +e
+          flutter analyze --no-fatal-warnings --no-fatal-infos lib test > analyze.log 2>&1
+          ANALYZE_EXIT=$?
+          echo "## Analyze Results" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat analyze.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat analyze.log
+          if [ $ANALYZE_EXIT -ne 0 ]; then
+            exit $ANALYZE_EXIT
+          fi
+
+      - name: Upload Diagnostic Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: analyze-log
+          path: analyze.log
+          if-no-files-found: ignore
 
       - name: Build APK (Release arm64)
         run: |
