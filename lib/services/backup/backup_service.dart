@@ -531,7 +531,7 @@ Future<void> _runRestoredAppUpdateMigrations(
   SharedPreferences preferences,
   int fromVersion,
 ) async {
-  if (fromVersion < 0 || fromVersion > currentAppUpdateMigrationVersion) {
+  if (fromVersion < 0) {
     throw BackupException(
       'Unsupported app update migration version: $fromVersion',
       code: BackupFailureCode.incompatibleVersion,
@@ -854,7 +854,7 @@ T _withDecodedArchive<T>(
 
 void _validateAppUpdateMigrationVersion(BackupManifest manifest) {
   final version = manifest.appUpdateMigrationVersion;
-  if (version < 0 || version > currentAppUpdateMigrationVersion) {
+  if (version < 0) {
     throw BackupException(
       'Unsupported app update migration version: $version',
       code: BackupFailureCode.incompatibleVersion,
